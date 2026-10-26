@@ -1,12 +1,28 @@
 import { useState } from 'react';
 
 export default function Board() {
+  const [xNext, setXNext] = useState(true);
   const [squares, setSquares] = useState(Array(9).fill(''));
 
   function handleClick(i) {
+    if (squares[i] !== '') {
+      return;
+    }
+
+    if (calculateWinner(squares)) {
+      /* 如果已经有棋子胜出，那么 */
+      return;
+    }
+
     const nextSquares = squares.slice();
-    nextSquares[i] = 'X';
+    if (xNext) {
+      nextSquares[i] = 'X';
+    } else {
+      nextSquares[i] = 'O';
+    }
+
     setSquares(nextSquares);
+    setXNext(!xNext);
   }
 
   return (
@@ -36,4 +52,29 @@ function Square({ value, onSquareClick }) {
       {value}
     </button>
   );
+}
+
+function calculateWinner(squares) {
+  /* 所有满足胜利的八种情况，以数组索引表示 */
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  /* 检查是否满足条件 */
+  for (const [a, b, c] of lines) {
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      /* 返回胜利的棋子 */
+      return squares[a];
+    }
+  }
+
+  /* 当前没有胜出的棋子 */
+  return null;
 }
