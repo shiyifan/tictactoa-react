@@ -4,26 +4,7 @@ export default function Board() {
   const [xNext, setXNext] = useState(true);
   const [squares, setSquares] = useState(Array(9).fill(''));
 
-  function handleClick(i) {
-    if (squares[i] !== '') {
-      return;
-    }
-
-    if (calculateWinner(squares)) {
-      /* 如果已经有棋子胜出，那么 */
-      return;
-    }
-
-    const nextSquares = squares.slice();
-    if (xNext) {
-      nextSquares[i] = 'X';
-    } else {
-      nextSquares[i] = 'O';
-    }
-
-    setSquares(nextSquares);
-    setXNext(!xNext);
-  }
+  const winner = calculateWinner(squares);
 
   return (
     <>
@@ -42,8 +23,31 @@ export default function Board() {
         <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
         <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
       </div>
+
+      <Status winner={winner} nextTurn={xNext ? 'X' : 'O'} />
     </>
   );
+
+  function handleClick(i) {
+    if (squares[i] !== '') {
+      return;
+    }
+
+    if (calculateWinner(squares)) {
+      /* 如果已经有棋子胜出，那么不再继续游戏 */
+      return;
+    }
+
+    const nextSquares = squares.slice();
+    if (xNext) {
+      nextSquares[i] = 'X';
+    } else {
+      nextSquares[i] = 'O';
+    }
+
+    setSquares(nextSquares);
+    setXNext(!xNext);
+  }
 }
 
 function Square({ value, onSquareClick }) {
@@ -52,6 +56,15 @@ function Square({ value, onSquareClick }) {
       {value}
     </button>
   );
+}
+
+function Status({ winner, nextTurn }) {
+  const hasWinner = winner === 'X' || winner === 'O';
+
+  const winnerMarkup = <span>Winner is: {winner} !!</span>;
+  const nextTurnMarkup = <span>Next turn: {nextTurn}</span>;
+
+  return <>{hasWinner ? winnerMarkup : nextTurnMarkup}</>;
 }
 
 function calculateWinner(squares) {
