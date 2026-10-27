@@ -1,9 +1,34 @@
 import { useState } from 'react';
 
-export default function Board() {
-  const [xNext, setXNext] = useState(true);
-  const [squares, setSquares] = useState(Array(9).fill(''));
+export default function Game() {
+  // 保存每一步棋,用于回溯历史.
+  // 其中每个元素均为一个数组，数组索引表示位置，值表示棋子'X', 'O'
+  const [history, setHistory] = useState([Array(9).fill('')]);
 
+  const [xNext, setXNext] = useState(true);
+
+  const currentSquares = history[history.length - 1];
+
+  return (
+    <>
+      <div className="game">
+        <div className="game-board">
+          <Board xNext={xNext} squares={currentSquares} onPlay={handlePlay} />
+        </div>
+        <div className="game-info">
+          <ol>{/* TODO */}</ol>
+        </div>
+      </div>
+    </>
+  );
+
+  function handlePlay(nextSquares) {
+    setHistory([...history, nextSquares]);
+    setXNext(!xNext);
+  }
+}
+
+function Board({ squares, xNext, onPlay }) {
   const winner = calculateWinner(squares);
 
   return (
@@ -30,6 +55,7 @@ export default function Board() {
 
   function handleClick(i) {
     if (squares[i] !== '') {
+      /* 点击位置上已经存在棋子 */
       return;
     }
 
@@ -45,8 +71,7 @@ export default function Board() {
       nextSquares[i] = 'O';
     }
 
-    setSquares(nextSquares);
-    setXNext(!xNext);
+    onPlay(nextSquares);
   }
 }
 
