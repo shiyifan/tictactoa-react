@@ -71,6 +71,10 @@ body {
   width: 34px;
 }
 
+.square.highlight {
+  box-shadow: inset 0px 1px 7px 2px #a83782;
+}
+
 .board-row:after {
   clear: both;
   content: '';

@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import cn from 'classnames';
 
 export default function Game() {
   // 棋盘的历史状态. 可用于回溯
   // 其中每个元素均为一个数组，数组索引表示位置，值表示棋子'X', 'O'
-  const [history, setHistory] = useState([Array(9).fill('')]);
+  const [history, setHistory] = useState([Array(9).fill(null)]);
 
   /* 当前棋盘的步骤，初始步骤(0)或者下完一步棋子后的棋盘步骤(1, 2, 3...) */
   const [currentMove, setCurrentMove] = useState(0);
@@ -32,7 +33,7 @@ export default function Game() {
     <>
       <div className="game">
         <div className="game-board">
-          <Board xNext={xNext} squares={currentSquares} onPlay={handlePlay} />
+          <Board xNext={xNext} squares={currentSquares} onPlay={handlePlay} currentMove={currentMove} />
         </div>
         <div className="game-info">
           <ol>{moves}</ol>
@@ -55,9 +56,10 @@ export default function Game() {
   }
 }
 
-function Board({ squares, xNext, onPlay }) {
+function Board({ squares, xNext, onPlay, currentMove }) {
   const winner = calculateWinner(squares);
   const rows = [];
+  const isDraw = !winner && currentMove === 9;
 
   for (let i = 0; i < 3; i++) {
     rows.push(<Row squares={squares} indexStart={i * 3} onRowClick={handleClick} key={i} />);
@@ -66,26 +68,27 @@ function Board({ squares, xNext, onPlay }) {
   return (
     <>
       {rows}
-      <Status winner={winner} nextTurn={xNext ? 'X' : 'O'} />
+      <Status winner={winner} nextTurn={xNext ? 'X' : 'O'} isDraw={isDraw} />
     </>
   );
 
   function handleClick(i) {
-    if (squares[i] !== '') {
+    if (squares[i] != null) {
       /* 点击位置上已经存在棋子 */
       return;
     }
 
-    if (calculateWinner(squares)) {
+    const winner = calculateWinner(squares);
+    if (winner) {
       /* 如果已经有棋子胜出，那么不再继续游戏 */
       return;
     }
 
-    const nextSquares = squares.slice();
+    const nextSquares = squares.map(s => s?.copy());
     if (xNext) {
-      nextSquares[i] = 'X';
+      nextSquares[i] = new Piece('X');
     } else {
-      nextSquares[i] = 'O';
+      nextSquares[i] = new Piece('O');
     }
 
     onPlay(nextSquares);
@@ -96,28 +99,29 @@ function Row({ squares, indexStart, onRowClick }) {
   let rowSquares = [];
   for (let i = 0; i < 3; i++) {
     const sqIndex = indexStart + i;
-    rowSquares.push(<Square value={squares[sqIndex]} onSquareClick={() => onRowClick(sqIndex)} key={i} />);
+    rowSquares.push(<Square piece={squares[sqIndex]} onSquareClick={() => onRowClick(sqIndex)} key={i} />);
   }
 
   return <div className="board-row">{rowSquares}</div>;
 }
 
 /* 棋盘上的一个格子 */
-function Square({ value, onSquareClick }) {
+function Square({ piece, onSquareClick }) {
   return (
-    <button className="square" onClick={onSquareClick}>
-      {value}
+    <button className={cn('square', piece?.highlighted && 'highlight')} onClick={onSquareClick}>
+      {piece?.value}
     </button>
   );
 }
 
-function Status({ winner, nextTurn }) {
+function Status({ winner, nextTurn, isDraw }) {
   const hasWinner = winner === 'X' || winner === 'O';
 
   const winnerMarkup = <span>Winner is: {winner} !!</span>;
   const nextTurnMarkup = <span>Next turn: {nextTurn}</span>;
+  const drawMarkup = <span>Draw, ^.^</span>;
 
-  return <>{hasWinner ? winnerMarkup : nextTurnMarkup}</>;
+  return (hasWinner && winnerMarkup) || (isDraw && drawMarkup) || nextTurnMarkup;
 }
 
 function calculateWinner(squares) {
@@ -135,12 +139,34 @@ function calculateWinner(squares) {
 
   /* 检查是否满足条件 */
   for (const [a, b, c] of lines) {
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      /* 返回胜利的棋子 */
-      return squares[a];
+    const allSet = squares[a] && squares[b] && squares[c];
+    if (allSet) {
+      const allSame = squares[a].value === squares[b].value && squares[a].value === squares[c].value;
+      if (allSet && allSame) {
+        /* 返回胜利的棋子以及棋子的位置 */
+        squares[a].highlighted = true;
+        squares[b].highlighted = true;
+        squares[c].highlighted = true;
+        return squares[a].value;
+      }
     }
   }
 
   /* 当前没有胜出的棋子 */
   return null;
+}
+
+/* 棋子 */
+class Piece {
+  value = '';
+  hightlighted = false;
+
+  constructor(value, highlighted) {
+    this.value = value;
+    this.hightlighted = highlighted ?? false;
+  }
+
+  copy() {
+    return new Piece(this.value, this.hightlighted);
+  }
 }
