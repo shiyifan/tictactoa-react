@@ -1,22 +1,25 @@
 import { useState } from 'react';
 
 export default function Game() {
-  // 保存每一步棋,用于回溯历史.
+  // 棋盘的历史状态. 可用于回溯
   // 其中每个元素均为一个数组，数组索引表示位置，值表示棋子'X', 'O'
   const [history, setHistory] = useState([Array(9).fill('')]);
 
-  const [xNext, setXNext] = useState(true);
+  /* 当前棋盘的步骤，初始步骤(0)或者下完一步棋子后的棋盘步骤(1, 2, 3...) */
   const [currentMove, setCurrentMove] = useState(0);
 
-  const currentSquares = history[history.length - 1];
+  const xNext = currentMove % 2 === 0; // 偶数步骤时，下'X'棋子，奇数时下'O'
+
+  const currentSquares = history[currentMove];
 
   const moves = history.map((squares, move) => {
     let description;
     if (move > 0) {
-      description = 'Go to move #' + move;
+      description = `#${move} move(${move % 2 !== 0 ? 'X' : 'O'})`;
     } else {
       description = 'Go to start';
     }
+
     return (
       <li key={move}>
         {description}
@@ -38,38 +41,31 @@ export default function Game() {
     </>
   );
 
+  /* nextSquares: 新棋子下了之后的棋盘 */
   function handlePlay(nextSquares) {
-    setHistory([...history, nextSquares]);
-    setXNext(!xNext);
+    /* 每次调用该函数时，已下了一个棋子 */
+
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
   }
 
   function jumpTo(nextMove) {
     setCurrentMove(nextMove);
-    setXNext(nextMove % 2 == 0);
   }
 }
 
 function Board({ squares, xNext, onPlay }) {
   const winner = calculateWinner(squares);
+  const rows = [];
+
+  for (let i = 0; i < 3; i++) {
+    rows.push(<Row squares={squares} indexStart={i * 3} onRowClick={handleClick} key={i} />);
+  }
 
   return (
     <>
-      <div className="board-row">
-        <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-        <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-        <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
-      </div>
-      <div className="board-row">
-        <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-        <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-        <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
-      </div>
-      <div className="board-row">
-        <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-        <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-        <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
-      </div>
-
+      {rows}
       <Status winner={winner} nextTurn={xNext ? 'X' : 'O'} />
     </>
   );
@@ -96,6 +92,17 @@ function Board({ squares, xNext, onPlay }) {
   }
 }
 
+function Row({ squares, indexStart, onRowClick }) {
+  let rowSquares = [];
+  for (let i = 0; i < 3; i++) {
+    const sqIndex = indexStart + i;
+    rowSquares.push(<Square value={squares[sqIndex]} onSquareClick={() => onRowClick(sqIndex)} key={i} />);
+  }
+
+  return <div className="board-row">{rowSquares}</div>;
+}
+
+/* 棋盘上的一个格子 */
 function Square({ value, onSquareClick }) {
   return (
     <button className="square" onClick={onSquareClick}>
